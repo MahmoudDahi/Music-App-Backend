@@ -1,5 +1,5 @@
 from tracemalloc import start
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from sqlalchemy import TEXT, VARCHAR, Column, LargeBinary,create_engine
 from sqlalchemy.orm import sessionmaker
@@ -43,7 +43,7 @@ def signup_user(user:UserCreate):
     #check if user exist in DB
     db_user = db.query(User).filter(User.email == user.email).first()
     if db_user:
-        return 'User with same Email Already Exist'
+        raise HTTPException(400,'User with same Email Already Exist') 
     
     #hash password
     hash_pw = bcrypt.hashpw(user.password.encode(),bcrypt.gensalt())
