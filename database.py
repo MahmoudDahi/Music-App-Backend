@@ -8,4 +8,10 @@ DATABASE_URL = 'postgresql://postgres:md1234@localhost:5432/musicapp'
 # Create database engine with connection pooling and logging
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autoflush=False,bind=engine)
-db = SessionLocal()
+
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()    
