@@ -13,5 +13,5 @@ def auth_middleware(x_auth_token= Header()):
             raise HTTPException(401,'Invalid token!')
         user_id = verify_token.get('id')    
         return {"user_id":user_id,"token":x_auth_token}
-    except jwt.PyJWKError:
+    except jwt.exceptions.PyJWTError:
         raise HTTPException(401,'Token is not Valid, Authorization failed!')
