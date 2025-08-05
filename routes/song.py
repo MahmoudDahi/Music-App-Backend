@@ -1,13 +1,16 @@
-import uuid
 from fastapi import APIRouter, Depends, File, Form, UploadFile
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session,joinedload
 
 from database import get_db
 from middleware.auth_middleware import auth_middleware
+from core.utils import userID
+from models.favorite import Favorite
+from models.song import Song
+from pydantic_schemas.favorite_song import FavoriteSong
+
 import cloudinary
 import cloudinary.uploader
-
-from models.song import Song
+import uuid
 
 router = APIRouter()
 
@@ -47,6 +50,36 @@ def upload_song(song: UploadFile= File(...),
     return new_song
 
 @router.get('/list')
-def fetch_song_list(db : Session=Depends(get_db),userID = Depends(auth_middleware)):
+def fetch_song_list(db : Session=Depends(get_db),user_detail = Depends(auth_middleware)):
     songs_list = db.query(Song).all()
     return songs_list
+
+@router.get('/list/favorites')
+def fetch_song_list(db : Session=Depends(get_db),user_detail = Depends(auth_middleware)):
+    user_id = user_detail[userID]
+    favorite_songs = db.query(Favorite).filter(Favorite.user_id == user_id).options(
+        joinedload(Favorite.song)
+    ).all()
+    return favorite_songs
+
+
+@router.post('/favorite')
+def favorite_song(song:FavoriteSong,    
+                  db : Session=Depends(get_db),
+                  user_detail = Depends(auth_middleware)):
+    user_id = user_detail[userID]
+    favorite_song = db.query(Favorite).filter(Favorite.song_id == song.song_id,Favorite.user_id == user_id).first()
+    if favorite_song:
+        db.delete(favorite_song)
+        db.commit()
+        return {'message':False}
+    else:
+        new_favorite = Favorite(
+            id=str(uuid.uuid4()),
+            song_id=song.song_id,
+            user_id=user_id
+        )
+        db.add(new_favorite)
+        db.commit()
+        return {'message':True}
+    
