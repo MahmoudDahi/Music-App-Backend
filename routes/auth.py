@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
-from core.utils import secretKey
+from sqlalchemy.orm import Session, joinedload
+from core.utils import secretKey,userID
 from database import get_db
 from middleware.auth_middleware import auth_middleware
 from models.user import User
@@ -43,9 +43,10 @@ def login_user(user:UserLogin,db: Session= Depends(get_db)):
 
 @router.get('/')
 def current_user_data(db:Session = Depends(get_db),user_data = Depends(auth_middleware)):
-    user_id = user_data.get('user_id')
-    token = user_data.get('token')
-    db_user = db.query(User).filter(User.id == user_id).first()
+    user_id = user_data.get(userID)
+    db_user = db.query(User).filter(User.id == user_id).options(
+          joinedload(User.favorites)
+    ).first()
     if not db_user:
         raise HTTPException(404,'User not Found!')
     return db_user
